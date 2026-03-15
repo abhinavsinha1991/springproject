@@ -75,8 +75,10 @@ object ImageKeywordDetector {
      * Returns null when no match is found.
      */
     fun detect(filename: String, description: String?): DetectionResult? {
+        // Normalize underscores and hyphens to spaces so filenames like
+        // "Happy_New_Year.jpg" match keyword groups that use spaces.
         val text = buildString {
-            append(filename.lowercase())
+            append(filename.lowercase().replace(Regex("[_\\-]"), " "))
             append(" ")
             append(description?.lowercase() ?: "")
         }
