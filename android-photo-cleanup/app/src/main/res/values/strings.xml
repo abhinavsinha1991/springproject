@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Photo Cleanup</string>
+
+    <!-- Sign-in -->
+    <string name="not_signed_in">Not signed in. Tap Sign In to continue.</string>
+    <string name="signed_in_as">Signed in as: %1$s</string>
+
+    <!-- Status messages -->
+    <string name="status_ready">Ready to scan your Google Photos.</string>
+    <string name="status_scanning">Scanning… %1$d photos checked, %2$d detected</string>
+    <string name="status_scan_complete">Scan complete: %1$d checked, %2$d detected</string>
+    <string name="status_deleting">Deleting… %1$d / %2$d done</string>
+    <string name="status_cleanup_complete">Done! Deleted %1$d photo(s). Failed: %2$d</string>
+    <string name="status_error">Error: %1$s</string>
+
+    <!-- Counts -->
+    <string name="detected_count">%1$d photo(s) detected</string>
+    <string name="detected_count_zero">No photos detected yet</string>
+    <string name="lifetime_deleted">Lifetime deleted: %1$d photos</string>
+    <string name="lifetime_deleted_zero">Lifetime deleted: 0 photos</string>
+
+    <!-- Review screen -->
+    <string name="review_summary">Pending: %1$d  |  Keep: %2$d  |  Delete: %3$d</string>
+    <string name="confidence_pct">Match confidence: %1$d%%</string>
+
+    <!-- Google OAuth client ID (replace with your own from Firebase / GCP Console) -->
+    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID.apps.googleusercontent.com</string>
+</resources>

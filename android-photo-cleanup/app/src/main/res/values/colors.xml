@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#1565C0</color>
+    <color name="colorPrimaryDark">#0D47A1</color>
+    <color name="colorAccent">#42A5F5</color>
+
+    <color name="background">#F5F5F5</color>
+    <color name="text_secondary">#757575</color>
+
+    <!-- Card tints for review states -->
+    <color name="card_pending">#FFFFFF</color>
+    <color name="card_keep">#E8F5E9</color>    <!-- light green -->
+    <color name="card_delete">#FFEBEE</color>  <!-- light red -->
+
+    <!-- Button colors -->
+    <color name="color_keep">#2E7D32</color>   <!-- green -->
+    <color name="color_delete">#C62828</color> <!-- red -->
+
+    <!-- Misc -->
+    <color name="md_grey_300">#E0E0E0</color>
+</resources>
