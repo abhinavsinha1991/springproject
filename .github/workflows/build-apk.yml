@@ -34,10 +34,24 @@ jobs:
         run: gradle wrapper --gradle-version 8.3
         working-directory: android-photo-cleanup
 
-      - name: Restore debug keystore
+      - name: Set up debug keystore
         run: |
           mkdir -p ~/.android
-          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+          else
+            keytool -genkeypair -v \
+              -keystore ~/.android/debug.keystore \
+              -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US"
+            gh secret set DEBUG_KEYSTORE_BASE64 \
+              --body "$(base64 -w 0 ~/.android/debug.keystore)"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
