@@ -193,7 +193,6 @@ jobs:
           set +e
           cd "$1"
           timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon \
-            -Pandroid.testInstrumentationRunnerArguments.timeout_msec=60000 \
             > "$2/gradle-instrumentation.log" 2>&1
           GRADLE_EXIT=$?
           cat "$2/gradle-instrumentation.log"

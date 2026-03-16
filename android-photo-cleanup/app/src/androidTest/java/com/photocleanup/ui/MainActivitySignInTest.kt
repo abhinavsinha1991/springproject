@@ -91,17 +91,21 @@ class MainActivitySignInTest {
     }
 
     private fun captureScreenshot(name: String) {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val dir = File(
-            instrumentation.targetContext.getExternalFilesDir(null),
-            "test-screenshots"
-        )
-        dir.mkdirs()
-        val bitmap: Bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return
-        FileOutputStream(File(dir, "$name.png")).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        try {
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            val dir = File(
+                instrumentation.targetContext.getExternalFilesDir(null),
+                "test-screenshots"
+            )
+            dir.mkdirs()
+            val bitmap: Bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return
+            FileOutputStream(File(dir, "$name.png")).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            bitmap.recycle()
+        } catch (_: Throwable) {
+            // Screenshot capture is best-effort; never fail a test over it.
         }
-        bitmap.recycle()
     }
 
     private lateinit var scenario: ActivityScenario<MainActivity>
