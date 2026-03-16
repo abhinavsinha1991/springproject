@@ -206,7 +206,7 @@ jobs:
           # can ignore it and run until the job-level timeout fires (was the 30-min hang).
           script: |
             set +e
-            cd "${{ github.workspace }}/android-photo-cleanup"
+            cd "${{ github.workspace }}/android-photo-cleanup" && \
             timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon \
               -Pandroid.testInstrumentationRunnerArguments.timeout_msec=60000 \
               > "${{ github.workspace }}/gradle-instrumentation.log" 2>&1

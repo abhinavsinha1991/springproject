@@ -35,7 +35,9 @@ class MainActivity : AppCompatActivity() {
             val account = task.getResult(ApiException::class.java)
             handleSignInSuccess(account)
         } catch (e: ApiException) {
-            showError("Sign-in failed: ${e.statusCode}", e)
+            val reason = e.status.statusMessage?.takeIf { it.isNotBlank() }
+                ?: "code ${e.statusCode}"
+            showError("Sign-in failed: $reason")
         } catch (e: Exception) {
             showError("Sign-in failed: ${e.message ?: "unknown error"}", e)
         }
