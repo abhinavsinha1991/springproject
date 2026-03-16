@@ -187,6 +187,8 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Run instrumentation tests on emulator
+        id: emulator-run
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
@@ -209,6 +211,17 @@ jobs:
               /sdcard/Android/data/com.photocleanup/files/test-screenshots/ \
               "$GITHUB_WORKSPACE/screenshots/" || echo "No screenshots found on device"
             exit $GRADLE_EXIT
+
+      - name: Collect emulator step logs
+        if: always()
+        run: |
+          if [ ! -f /tmp/gradle-instrumentation.log ]; then
+            echo "Emulator step failed before script executed (emulator may not have booted)." \
+              > /tmp/gradle-instrumentation.log
+          fi
+          if [ "${{ steps.emulator-run.outcome }}" = "failure" ]; then
+            exit 1
+          fi
 
       - name: Upload instrumentation test results
         if: always()
