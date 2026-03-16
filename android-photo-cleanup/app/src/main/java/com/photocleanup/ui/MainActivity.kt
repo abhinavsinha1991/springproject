@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
             val account = task.getResult(ApiException::class.java)
             handleSignInSuccess(account)
         } catch (e: ApiException) {
-            showError("Sign-in failed: ${e.statusCode}")
+            showError("Sign-in failed: ${e.statusCode}", e)
         }
     }
 
@@ -160,7 +160,7 @@ class MainActivity : AppCompatActivity() {
 
             is MainViewModel.UiState.Error -> {
                 binding.progressBar.hide()
-                showError(state.message)
+                showError(state.message, state.cause)
                 binding.btnScan.isEnabled = true
             }
         }
@@ -206,7 +206,7 @@ class MainActivity : AppCompatActivity() {
                 viewModel.setAccessToken(token)
                 showSignedIn(account.email ?: "")
             } catch (e: Exception) {
-                showError("Could not get access token: ${e.message}")
+                showError("Could not get access token: ${e.message}", e)
             }
         }
     }
@@ -244,8 +244,17 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showError(msg: String) {
-        binding.tvErrorMessage.text = msg
+    private fun showError(msg: String, cause: Throwable? = null) {
+        val debugText = buildString {
+            append(msg)
+            if (cause != null) {
+                append("\n[${cause.javaClass.simpleName}]")
+                val frame = cause.stackTrace.firstOrNull { it.className.startsWith("com.photocleanup") }
+                    ?: cause.stackTrace.firstOrNull()
+                if (frame != null) append(" at ${frame.className.substringAfterLast('.')}.${frame.methodName}:${frame.lineNumber}")
+            }
+        }
+        binding.tvErrorMessage.text = debugText
         binding.errorBanner.visibility = View.VISIBLE
         binding.tvStatus.text = getString(R.string.status_error, msg)
     }

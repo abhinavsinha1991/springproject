@@ -69,7 +69,7 @@ class MainViewModel(
                     )
                 },
                 onFailure = { error ->
-                    _uiState.value = UiState.Error(error.message ?: "Unknown error")
+                    _uiState.value = UiState.Error(error.message ?: "Unknown error", error)
                 }
             )
         }
@@ -120,7 +120,7 @@ class MainViewModel(
                     _uiState.value = UiState.CleanupComplete(cleanupResult)
                 },
                 onFailure = { error ->
-                    _uiState.value = UiState.Error(error.message ?: "Deletion failed")
+                    _uiState.value = UiState.Error(error.message ?: "Deletion failed", error)
                 }
             )
         }
@@ -136,6 +136,6 @@ class MainViewModel(
         data class ScanComplete(val totalScanned: Int, val detected: Int, val hasMore: Boolean) : UiState()
         data class Deleting(val total: Int, val done: Int) : UiState()
         data class CleanupComplete(val result: CleanupResult) : UiState()
-        data class Error(val message: String) : UiState()
+        data class Error(val message: String, val cause: Throwable? = null) : UiState()
     }
 }
