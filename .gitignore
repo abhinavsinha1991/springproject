@@ -1,36 +1,34 @@
-/target/
-!.mvn/wrapper/maven-wrapper.jar
+# Android build outputs
+*.apk
+*.aab
+*.ap_
+*.dex
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# Gradle
+.gradle/
+build/
+*/build/
+local.properties
+gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.jar
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# IntelliJ / Android Studio
+.idea/
 *.iml
+*.iws
 *.ipr
+out/
+captures/
 
-### NetBeans ###
-/nbproject/private/
-/build/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
+# OS
 .DS_Store
-src/.DS_Store
-src/main/.DS_Store
-src/main/resources/.DS_Store
-conf/*
-*/target/
+Thumbs.db
+
+# Signing
+*.jks
+*.keystore
+*.p12
+
+# Logs
+*.log
 logs/
-*/logs/
-*/docker_target
-*/src/run_docker.retry

@@ -1,8 +1,0 @@
----
-rabbitmq_host: host.docker.internal
-rabbitmq_username: rabbit
-rabbitmq_password: password
-springproject_rabbit_enabled: false
-
-spring_datasource_host: host.docker.internal
-spring_datasource_configure: false
