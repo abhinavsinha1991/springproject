@@ -219,9 +219,26 @@ jobs:
       - name: Collect emulator step logs
         if: always()
         run: |
-          if [ ! -f "$GITHUB_WORKSPACE/gradle-instrumentation.log" ]; then
-            echo "Emulator step failed before script executed (emulator may not have booted)." \
-              > "$GITHUB_WORKSPACE/gradle-instrumentation.log"
+          LOG="$GITHUB_WORKSPACE/gradle-instrumentation.log"
+          if [ ! -f "$LOG" ]; then
+            {
+              echo "Emulator step failed before script executed (emulator may not have booted)."
+              echo ""
+              echo "=== adb devices ==="
+              adb devices 2>&1 || true
+              echo ""
+              echo "=== AVD / emulator logs (~/.android) ==="
+              find "$HOME/.android" -name "*.log" 2>/dev/null | sort | while IFS= read -r f; do
+                echo "--- $f ---"
+                tail -n 200 "$f" 2>/dev/null
+                echo ""
+              done
+              echo "=== /tmp emulator artefacts ==="
+              find /tmp -maxdepth 2 \( -name "emulator*" -o -name "android-emulator*" \) 2>/dev/null \
+                | head -10 | while IFS= read -r f; do
+                  [ -f "$f" ] && { echo "--- $f ---"; tail -n 100 "$f" 2>/dev/null; echo ""; }
+                done
+            } > "$LOG"
           fi
           if [ "${{ steps.emulator-run.outcome }}" = "failure" ]; then
             exit 1
