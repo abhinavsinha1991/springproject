@@ -207,6 +207,7 @@ jobs:
             set +e
             cd "$GITHUB_WORKSPACE/android-photo-cleanup"
             timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon \
+              -Pandroid.testInstrumentationRunnerArguments.timeout_msec=60000 \
               > "$GITHUB_WORKSPACE/gradle-instrumentation.log" 2>&1
             GRADLE_EXIT=$?
             cat "$GITHUB_WORKSPACE/gradle-instrumentation.log"
