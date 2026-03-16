@@ -24,6 +24,11 @@ android {
         versionName versionProps['VERSION_NAME']
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments['timeout_msec'] = '30000'  // 30s per test
+    }
+
+    testOptions {
+        animationsDisabled true
     }
 
     buildTypes {
