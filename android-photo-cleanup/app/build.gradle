@@ -68,17 +68,14 @@ tasks.register('printDebugSha1') {
             println "==========================================\n"
             return
         }
-        def stdout = new ByteArrayOutputStream()
-        exec {
-            commandLine 'keytool', '-list', '-v',
-                '-keystore', keystore.path,
-                '-alias', 'androiddebugkey',
-                '-storepass', 'android',
-                '-keypass', 'android'
-            standardOutput = stdout
-            ignoreExitValue = true
-        }
-        def sha1 = stdout.toString().readLines().find { it.trim().startsWith('SHA1:') }?.trim()
+        def proc = ['keytool', '-list', '-v',
+            '-keystore', keystore.path,
+            '-alias', 'androiddebugkey',
+            '-storepass', 'android',
+            '-keypass', 'android'].execute()
+        def stdout = proc.text
+        proc.waitFor()
+        def sha1 = stdout.readLines().find { it.trim().startsWith('SHA1:') }?.trim()
         println "\n=========================================="
         println " Debug keystore ${sha1 ?: 'SHA1 not found'}"
         println "==========================================\n"
