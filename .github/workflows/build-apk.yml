@@ -194,6 +194,10 @@ jobs:
           api-level: 29
           arch: x86
           profile: pixel_2
+          # Headless CI options: software GPU, no audio/animation/snapshots so the
+          # emulator boots reliably without physical GPU or display.
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           # Fail fast if the emulator doesn't finish booting within 6 minutes.
           emulator-boot-timeout: 360
           # timeout --kill-after=30: send SIGTERM at 4 min, then SIGKILL 30 s later.
