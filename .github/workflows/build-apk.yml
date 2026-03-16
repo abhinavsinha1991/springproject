@@ -132,6 +132,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 22   # budget: ~8 min setup + 6 min boot + 4 min tests + 4 min buffer
     needs: build-and-test
+    permissions:
+      contents: write
     if: >
       github.event_name == 'push' ||
       contains(github.event.pull_request.labels.*.name, 'run-e2e')
@@ -198,8 +200,8 @@ jobs:
           script: |
             set +e
             cd android-photo-cleanup
-            timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon
-            GRADLE_EXIT=$?
+            timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon 2>&1 | tee /tmp/gradle-instrumentation.log
+            GRADLE_EXIT=${PIPESTATUS[0]}
             mkdir -p ../screenshots
             adb pull \
               /sdcard/Android/data/com.photocleanup/files/test-screenshots/ \
@@ -221,3 +223,33 @@ jobs:
           name: test-screenshots
           path: screenshots/
           retention-days: 7
+
+      - name: Remove stale failure log on success
+        if: success()
+        run: |
+          if git ls-files --error-unmatch ci-failure-logs.txt 2>/dev/null; then
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git rm ci-failure-logs.txt
+            git commit -m "ci: remove failure log (instrumentation passing)"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }} || true
+          fi
+
+      - name: Save failure logs to repo
+        if: failure()
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          {
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "Branch: $BRANCH"
+            echo "Commit: ${{ github.sha }}"
+            echo "Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo ""
+            f=/tmp/gradle-instrumentation.log
+            [ -f "$f" ] && { echo "## $(basename "$f")"; tail -c 35000 "$f"; echo ""; }
+          } > ci-failure-logs.txt
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add ci-failure-logs.txt
+          git commit -m "ci: save instrumentation failure logs"
+          git push origin HEAD:"$BRANCH" || true
