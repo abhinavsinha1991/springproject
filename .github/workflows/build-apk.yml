@@ -38,16 +38,23 @@ jobs:
         run: |
           mkdir -p ~/.android
           if [ -n "$KEYSTORE_B64" ]; then
+            echo "Restoring keystore from secret..."
             echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
           else
+            echo "No keystore secret found — generating..."
             keytool -genkeypair -v \
               -keystore ~/.android/debug.keystore \
               -alias androiddebugkey \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass android -keypass android \
               -dname "CN=Android Debug,O=Android,C=US"
+            echo "Keystore generated ($(wc -c < ~/.android/debug.keystore) bytes)"
             KEYSTORE_NEW=$(base64 -w 0 ~/.android/debug.keystore)
-            gh secret set DEBUG_KEYSTORE_BASE64 --body "$KEYSTORE_NEW"
+            echo "Base64 length: ${#KEYSTORE_NEW}"
+            gh secret set DEBUG_KEYSTORE_BASE64 \
+              --repo "$GITHUB_REPOSITORY" \
+              --body "$KEYSTORE_NEW"
+            echo "Secret saved."
           fi
         env:
           KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
