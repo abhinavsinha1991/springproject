@@ -25,5 +25,5 @@
     <string name="confidence_pct">Match confidence: %1$d%%</string>
 
     <!-- Google OAuth client ID (replace with your own from Firebase / GCP Console) -->
-    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">968391044769-9khmda73jaal1a89sbhsvmalr6jl530o.apps.googleusercontent.com</string>
 </resources>
