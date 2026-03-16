@@ -2,15 +2,19 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ "**" ]
   workflow_dispatch:
 
+# Cancel in-flight runs for the same branch/PR when a new push arrives
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -30,6 +34,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.3'
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
       - name: Generate Gradle wrapper
         run: gradle wrapper --gradle-version 8.3
@@ -62,11 +67,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --configuration-cache
         working-directory: android-photo-cleanup
 
       - name: Run JVM unit tests
-        run: ./gradlew test --no-daemon
+        run: ./gradlew test --no-daemon --configuration-cache
         working-directory: android-photo-cleanup
 
       - name: Upload unit test results
@@ -76,6 +81,64 @@ jobs:
           name: unit-test-results
           path: android-photo-cleanup/app/build/reports/tests/
           retention-days: 7
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android-photo-cleanup/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
+  # Instrumentation tests run only on pushes to main/develop or PRs labelled 'run-e2e'.
+  # This prevents spinning up an emulator for every feature-branch push.
+  instrumentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build-and-test
+    if: >
+      github.event_name == 'push' ||
+      contains(github.event.pull_request.labels.*.name, 'run-e2e')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.3'
+          # Same key as build-and-test so this job reuses the warm build cache
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Generate Gradle wrapper
+        run: gradle wrapper --gradle-version 8.3
+        working-directory: android-photo-cleanup
+
+      - name: Set up debug keystore
+        run: |
+          mkdir -p ~/.android
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+          else
+            keytool -genkeypair -v \
+              -keystore ~/.android/debug.keystore \
+              -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
 
       - name: Enable KVM for hardware acceleration
         run: |
@@ -87,9 +150,9 @@ jobs:
       - name: Run instrumentation tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
-          arch: x86_64
-          profile: Nexus 6
+          api-level: 29
+          arch: x86
+          profile: pixel_2
           script: >
             cd android-photo-cleanup &&
             ./gradlew connectedDebugAndroidTest --no-daemon
@@ -100,11 +163,4 @@ jobs:
         with:
           name: instrumentation-test-results
           path: android-photo-cleanup/app/build/reports/androidTests/connected/
-          retention-days: 7
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: android-photo-cleanup/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
