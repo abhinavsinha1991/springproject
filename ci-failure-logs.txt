@@ -1,0 +1,8 @@
+Run: https://github.com/abhinavsinha1991/springproject/actions/runs/23165193565
+Branch: claude/android-greeting-image-cleanup-bwu6R
+Commit: 4ebcf36cebb6dc31d698cc5f1ae7659ab9197556
+Time: 2026-03-16T20:52:10Z
+
+## gradle-instrumentation.log
+Emulator step failed before script executed (emulator may not have booted).
+
