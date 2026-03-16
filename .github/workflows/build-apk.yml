@@ -205,16 +205,16 @@ jobs:
           # can ignore it and run until the job-level timeout fires (was the 30-min hang).
           script: |
             set +e
-            cd "$GITHUB_WORKSPACE/android-photo-cleanup"
+            cd "${{ github.workspace }}/android-photo-cleanup"
             timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon \
               -Pandroid.testInstrumentationRunnerArguments.timeout_msec=60000 \
-              > "$GITHUB_WORKSPACE/gradle-instrumentation.log" 2>&1
+              > "${{ github.workspace }}/gradle-instrumentation.log" 2>&1
             GRADLE_EXIT=$?
-            cat "$GITHUB_WORKSPACE/gradle-instrumentation.log"
-            mkdir -p "$GITHUB_WORKSPACE/screenshots"
+            cat "${{ github.workspace }}/gradle-instrumentation.log"
+            mkdir -p "${{ github.workspace }}/screenshots"
             adb pull \
               /sdcard/Android/data/com.photocleanup/files/test-screenshots/ \
-              "$GITHUB_WORKSPACE/screenshots/" || echo "No screenshots found on device"
+              "${{ github.workspace }}/screenshots/" || echo "No screenshots found on device"
             exit $GRADLE_EXIT
 
       - name: Collect emulator step logs
