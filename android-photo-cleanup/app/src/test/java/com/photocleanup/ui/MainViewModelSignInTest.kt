@@ -106,7 +106,7 @@ class MainViewModelSignInTest {
                 maxPages = any(),
                 onProgress = any()
             )
-        } returns Result.success(ScanResult(emptyList<PhotoItem>(), 0, null))
+        } returns Result.success(ScanResult(totalScanned = 0, detected = emptyList(), nextPageToken = null))
 
         viewModel.setAccessToken("fake-token")
         viewModel.startScan()

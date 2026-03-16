@@ -189,7 +189,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleSignInSuccess(account: GoogleSignInAccount) {
         // Retrieve OAuth access token (cached by Google Play Services)
-        GoogleSignIn.getLastSignedInAccount(this)?.serverAuthCode?.let { authCode ->
+        GoogleSignIn.getLastSignedInAccount(this)?.serverAuthCode?.let { _ ->
             // In production: exchange authCode server-side for access token.
             // For demo: use the idToken to call your backend which returns accessToken.
         }
