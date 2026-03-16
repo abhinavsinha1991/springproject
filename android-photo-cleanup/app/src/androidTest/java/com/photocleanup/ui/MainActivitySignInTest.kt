@@ -3,6 +3,7 @@ package com.photocleanup.ui
 import android.app.Activity
 import android.app.Instrumentation.ActivityResult
 import android.content.Intent
+import android.graphics.Bitmap
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
@@ -15,6 +16,7 @@ import androidx.test.espresso.matcher.ViewMatchers.isEnabled
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.photocleanup.R
 import org.hamcrest.CoreMatchers.containsString
 import org.hamcrest.CoreMatchers.not
@@ -22,7 +24,11 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 import org.junit.runner.RunWith
+import java.io.File
+import java.io.FileOutputStream
 
 /**
  * Emulator-based instrumentation tests for [MainActivity] sign-in behaviour.
@@ -64,8 +70,39 @@ import org.junit.runner.RunWith
 class MainActivitySignInTest {
 
     // IntentsRule initialises and releases Espresso Intents around each test.
-    @get:Rule
+    // order=1 → outer; screenshotRule (order=2) is inner so its starting() fires
+    // after Intents are ready and its finished() fires before Intents are torn down.
+    @get:Rule(order = 1)
     val intentsRule = IntentsRule()
+
+    /**
+     * Captures a PNG screenshot at the start and end of every test scenario.
+     * Files land in the app's private external-files directory so no
+     * WRITE_EXTERNAL_STORAGE permission is required (API 29+).
+     * Path: /sdcard/Android/data/com.photocleanup/files/test-screenshots/
+     */
+    @get:Rule(order = 2)
+    val screenshotRule = object : TestWatcher() {
+        override fun starting(description: Description) =
+            captureScreenshot("${description.methodName}_start")
+
+        override fun finished(description: Description) =
+            captureScreenshot("${description.methodName}_end")
+    }
+
+    private fun captureScreenshot(name: String) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val dir = File(
+            instrumentation.targetContext.getExternalFilesDir(null),
+            "test-screenshots"
+        )
+        dir.mkdirs()
+        val bitmap: Bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return
+        FileOutputStream(File(dir, "$name.png")).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+        bitmap.recycle()
+    }
 
     private lateinit var scenario: ActivityScenario<MainActivity>
 

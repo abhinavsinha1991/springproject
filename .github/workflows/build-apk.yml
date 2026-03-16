@@ -153,9 +153,21 @@ jobs:
           api-level: 29
           arch: x86
           profile: pixel_2
-          script: >
-            cd android-photo-cleanup &&
-            ./gradlew connectedDebugAndroidTest --no-daemon
+          # Use a literal-block scalar so we can run multiple shell statements.
+          # timeout 300 gives the full Gradle test run a hard 5-minute ceiling.
+          # Screenshots are pulled while the emulator is still alive, then we
+          # re-exit with the original Gradle exit code so the step fails correctly
+          # when tests fail.
+          script: |
+            set +e
+            cd android-photo-cleanup
+            timeout 300 ./gradlew connectedDebugAndroidTest --no-daemon
+            GRADLE_EXIT=$?
+            mkdir -p ../screenshots
+            adb pull \
+              /sdcard/Android/data/com.photocleanup/files/test-screenshots/ \
+              ../screenshots/ || echo "No screenshots found on device"
+            exit $GRADLE_EXIT
 
       - name: Upload instrumentation test results
         if: always()
@@ -163,4 +175,12 @@ jobs:
         with:
           name: instrumentation-test-results
           path: android-photo-cleanup/app/build/reports/androidTests/connected/
+          retention-days: 7
+
+      - name: Upload test screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          path: screenshots/
           retention-days: 7
