@@ -31,7 +31,19 @@
 - Gradle cache miss warnings — transient GitHub Actions infra issue
 
 ## Secrets required in CI
-- `ANTHROPIC_API_KEY` — Claude API key
 - `DEBUG_KEYSTORE_BASE64` — base64-encoded debug keystore
 - `GRADLE_ENCRYPTION_KEY` — Gradle build cache encryption key
 - `GH_PAT` — GitHub PAT (used only in `setup-keystore.yml`)
+
+## Fixing CI failures
+When the `build-and-test` job fails, CI writes a `ci-failure-logs.txt` file to the
+branch root and commits it automatically. Pushes that only change this file are
+ignored by the workflow (`paths-ignore`), so it never triggers a re-run.
+
+To investigate and fix:
+1. `git pull` — pick up the log commit
+2. Read `ci-failure-logs.txt` — contains the Gradle error output
+3. Fix the relevant source file(s)
+4. `git rm ci-failure-logs.txt` — remove it before committing
+5. Commit and push — this triggers CI normally; on the next green build CI
+   removes any lingering log file automatically

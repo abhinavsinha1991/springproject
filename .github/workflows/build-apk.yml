@@ -3,7 +3,11 @@ name: Build Android APK
 on:
   push:
     branches: [ main, develop, claude/android-greeting-image-cleanup-bwu6R ]
+    paths-ignore:
+      - 'ci-failure-logs.txt'
   pull_request:
+    paths-ignore:
+      - 'ci-failure-logs.txt'
   workflow_dispatch:
 
 # Cancel in-flight runs for the same branch/PR when a new push arrives
@@ -15,6 +19,8 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -67,11 +73,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon --configuration-cache
+        run: ./gradlew assembleDebug --no-daemon --configuration-cache 2>&1 | tee /tmp/gradle-build.log
         working-directory: android-photo-cleanup
 
       - name: Run JVM unit tests
-        run: ./gradlew test --no-daemon --configuration-cache
+        run: ./gradlew test --no-daemon --configuration-cache 2>&1 | tee /tmp/gradle-test.log
         working-directory: android-photo-cleanup
 
       - name: Upload unit test results
@@ -88,6 +94,37 @@ jobs:
           name: app-debug
           path: android-photo-cleanup/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
+
+      - name: Remove stale failure log on success
+        if: success()
+        run: |
+          if git ls-files --error-unmatch ci-failure-logs.txt 2>/dev/null; then
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git rm ci-failure-logs.txt
+            git commit -m "ci: remove failure log (build passing)"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }} || true
+          fi
+
+      - name: Save failure logs to repo
+        if: failure()
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          {
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "Branch: $BRANCH"
+            echo "Commit: ${{ github.sha }}"
+            echo "Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo ""
+            for f in /tmp/gradle-build.log /tmp/gradle-test.log; do
+              [ -f "$f" ] && { echo "## $(basename "$f")"; tail -c 35000 "$f"; echo ""; }
+            done
+          } > ci-failure-logs.txt
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add ci-failure-logs.txt
+          git commit -m "ci: save failure logs"
+          git push origin HEAD:"$BRANCH" || true
 
   # Instrumentation tests run only on pushes to main/develop or PRs labelled 'run-e2e'.
   # This prevents spinning up an emulator for every feature-branch push.
