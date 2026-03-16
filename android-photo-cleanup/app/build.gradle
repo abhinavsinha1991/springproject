@@ -44,6 +44,27 @@ android {
     }
 }
 
+// Print debug keystore SHA-1 at the start of every build
+tasks.register('printDebugSha1') {
+    doLast {
+        def keystore = "${System.getProperty('user.home')}/.android/debug.keystore"
+        def result = exec {
+            commandLine 'keytool', '-list', '-v',
+                '-keystore', keystore,
+                '-alias', 'androiddebugkey',
+                '-storepass', 'android',
+                '-keypass', 'android'
+            standardOutput = new ByteArrayOutputStream()
+            ext.output = { return standardOutput.toString() }
+        }
+        def sha1 = output().readLines().find { it.trim().startsWith('SHA1:') }?.trim()
+        println "\n=========================================="
+        println " Debug keystore ${sha1 ?: 'SHA1 not found'}"
+        println "==========================================\n"
+    }
+}
+preBuild.dependsOn printDebugSha1
+
 dependencies {
     // Core
     implementation 'androidx.core:core-ktx:1.12.0'
