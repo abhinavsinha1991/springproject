@@ -4,6 +4,14 @@ plugins {
     id 'kotlin-parcelize'
 }
 
+// Auto-increment versionCode on every build
+def versionPropsFile = file("${rootDir}/version.properties")
+def versionProps = new Properties()
+versionPropsFile.withReader { versionProps.load(it) }
+def buildVersionCode = versionProps['VERSION_CODE'].toInteger() + 1
+versionProps['VERSION_CODE'] = buildVersionCode.toString()
+versionPropsFile.withWriter { versionProps.store(it, null) }
+
 android {
     namespace 'com.photocleanup'
     compileSdk 34
@@ -12,8 +20,8 @@ android {
         applicationId "com.photocleanup"
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode buildVersionCode
+        versionName versionProps['VERSION_NAME']
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -28,6 +36,7 @@ android {
     buildFeatures {
         viewBinding true
         compose true
+        buildConfig true
     }
 
     composeOptions {

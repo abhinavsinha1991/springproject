@@ -2,6 +2,7 @@ package com.photocleanup.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -13,6 +14,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.Scope
+import com.photocleanup.BuildConfig
 import com.photocleanup.PhotoCleanupApp
 import com.photocleanup.R
 import com.photocleanup.databinding.ActivityMainBinding
@@ -45,6 +47,9 @@ class MainActivity : AppCompatActivity() {
         setupGoogleSignIn()
         observeViewModel()
         setupClickListeners()
+
+        binding.tvVersion.text = "v${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})"
+        binding.btnErrorDismiss.setOnClickListener { hideErrorBanner() }
 
         // Auto sign-in if already signed in
         val existing = GoogleSignIn.getLastSignedInAccount(this)
@@ -86,6 +91,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUiForState(state: MainViewModel.UiState) {
+        if (state !is MainViewModel.UiState.Error) hideErrorBanner()
         when (state) {
             is MainViewModel.UiState.Idle -> {
                 binding.progressBar.hide()
@@ -239,7 +245,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showError(msg: String) {
-        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+        binding.tvErrorMessage.text = msg
+        binding.errorBanner.visibility = View.VISIBLE
         binding.tvStatus.text = getString(R.string.status_error, msg)
+    }
+
+    private fun hideErrorBanner() {
+        binding.errorBanner.visibility = View.GONE
     }
 }
