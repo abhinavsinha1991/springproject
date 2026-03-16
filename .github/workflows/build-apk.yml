@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, claude/android-greeting-image-cleanup-bwu6R ]
   pull_request:
   workflow_dispatch:
 
