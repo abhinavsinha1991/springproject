@@ -36,6 +36,8 @@ class MainActivity : AppCompatActivity() {
             handleSignInSuccess(account)
         } catch (e: ApiException) {
             showError("Sign-in failed: ${e.statusCode}", e)
+        } catch (e: Exception) {
+            showError("Sign-in failed: ${e.message ?: "unknown error"}", e)
         }
     }
 
@@ -90,8 +92,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var lastStateWasError = false
+
     private fun updateUiForState(state: MainViewModel.UiState) {
-        if (state !is MainViewModel.UiState.Error) hideErrorBanner()
+        // Only auto-hide the banner when the ViewModel itself is clearing an error state.
+        // Hiding on every non-Error state would erase sign-in errors that are shown
+        // directly via showError() and never go through the ViewModel.
+        if (lastStateWasError && state !is MainViewModel.UiState.Error) hideErrorBanner()
+        lastStateWasError = state is MainViewModel.UiState.Error
         when (state) {
             is MainViewModel.UiState.Idle -> {
                 binding.progressBar.hide()
