@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
                 5 -> "INVALID_ACCOUNT"
                 7 -> "NETWORK_ERROR"
                 8 -> "INTERNAL_ERROR"
-                10 -> "DEVELOPER_ERROR"
+                10 -> "DEVELOPER_ERROR – OAuth client ID or SHA-1 not registered in Google Cloud Console"
                 12500 -> "SIGN_IN_CANCELLED"
                 12501 -> "SIGN_IN_IN_PROGRESS"
                 12502 -> "SIGN_IN_FAILED"
