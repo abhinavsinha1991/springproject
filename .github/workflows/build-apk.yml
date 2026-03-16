@@ -187,6 +187,24 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Write instrumentation script
+        run: |
+          cat > /tmp/run-tests.sh << 'SCRIPT'
+          set +e
+          cd "$1"
+          timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon \
+            -Pandroid.testInstrumentationRunnerArguments.timeout_msec=60000 \
+            > "$2/gradle-instrumentation.log" 2>&1
+          GRADLE_EXIT=$?
+          cat "$2/gradle-instrumentation.log"
+          mkdir -p "$2/screenshots"
+          adb pull \
+            /sdcard/Android/data/com.photocleanup/files/test-screenshots/ \
+            "$2/screenshots/" || echo "No screenshots found on device"
+          exit $GRADLE_EXIT
+          SCRIPT
+          chmod +x /tmp/run-tests.sh
+
       - name: Run instrumentation tests on emulator
         id: emulator-run
         continue-on-error: true
@@ -204,19 +222,7 @@ jobs:
           # timeout --kill-after=30: send SIGTERM at 4 min, then SIGKILL 30 s later.
           # Plain `timeout` only sends SIGTERM; Gradle daemon + ADB child processes
           # can ignore it and run until the job-level timeout fires (was the 30-min hang).
-          script: |
-            set +e
-            cd "${{ github.workspace }}/android-photo-cleanup" && \
-            timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon \
-              -Pandroid.testInstrumentationRunnerArguments.timeout_msec=60000 \
-              > "${{ github.workspace }}/gradle-instrumentation.log" 2>&1
-            GRADLE_EXIT=$?
-            cat "${{ github.workspace }}/gradle-instrumentation.log"
-            mkdir -p "${{ github.workspace }}/screenshots"
-            adb pull \
-              /sdcard/Android/data/com.photocleanup/files/test-screenshots/ \
-              "${{ github.workspace }}/screenshots/" || echo "No screenshots found on device"
-            exit $GRADLE_EXIT
+          script: /tmp/run-tests.sh "${{ github.workspace }}/android-photo-cleanup" "${{ github.workspace }}"
 
       - name: Collect emulator step logs
         if: always()
