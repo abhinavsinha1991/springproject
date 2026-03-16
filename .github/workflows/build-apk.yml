@@ -199,13 +199,15 @@ jobs:
           # can ignore it and run until the job-level timeout fires (was the 30-min hang).
           script: |
             set +e
-            cd android-photo-cleanup
-            timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon 2>&1 | tee /tmp/gradle-instrumentation.log
-            GRADLE_EXIT=${PIPESTATUS[0]}
-            mkdir -p ../screenshots
+            timeout --kill-after=30 240 "$GITHUB_WORKSPACE/android-photo-cleanup/gradlew" \
+              connectedDebugAndroidTest --no-daemon \
+              > /tmp/gradle-instrumentation.log 2>&1
+            GRADLE_EXIT=$?
+            cat /tmp/gradle-instrumentation.log
+            mkdir -p "$GITHUB_WORKSPACE/screenshots"
             adb pull \
               /sdcard/Android/data/com.photocleanup/files/test-screenshots/ \
-              ../screenshots/ || echo "No screenshots found on device"
+              "$GITHUB_WORKSPACE/screenshots/" || echo "No screenshots found on device"
             exit $GRADLE_EXIT
 
       - name: Upload instrumentation test results
