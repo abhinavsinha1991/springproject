@@ -247,13 +247,13 @@ class MainActivity : AppCompatActivity() {
     private fun showError(msg: String, cause: Throwable? = null) {
         val debugText = buildString {
             append(msg)
-            if (cause != null) {
-                append("\n[${cause.javaClass.simpleName}]")
-                val frame = cause.stackTrace.firstOrNull { it.className.startsWith("com.photocleanup") }
-                    ?: cause.stackTrace.firstOrNull()
-                if (frame != null) append(" at ${frame.className.substringAfterLast('.')}.${frame.methodName}:${frame.lineNumber}")
+            var t: Throwable? = cause
+            while (t != null) {
+                append("\n[${t.javaClass.simpleName}]")
+                if (t.message != null && t.message != msg) append(" ${t.message}")
+                t = t.cause
             }
-        }
+        }.take(200)
         binding.tvErrorMessage.text = debugText
         binding.errorBanner.visibility = View.VISIBLE
         binding.tvStatus.text = getString(R.string.status_error, msg)
