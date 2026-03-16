@@ -34,6 +34,16 @@ jobs:
         run: gradle wrapper --gradle-version 8.3
         working-directory: android-photo-cleanup
 
+      - name: Generate debug keystore
+        run: |
+          mkdir -p ~/.android
+          keytool -genkeypair -v \
+            -keystore ~/.android/debug.keystore \
+            -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
         working-directory: android-photo-cleanup
