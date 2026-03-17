@@ -131,7 +131,7 @@ jobs:
   # This prevents spinning up an emulator for every feature-branch push.
   instrumentation:
     runs-on: ubuntu-latest
-    timeout-minutes: 22   # budget: ~8 min setup + 6 min boot + 4 min tests + 4 min buffer
+    timeout-minutes: 30   # budget: ~8 min setup + 6 min boot + 8 min tests (google_apis) + 8 min buffer
     needs: build-and-test
     permissions:
       contents: write
@@ -192,7 +192,7 @@ jobs:
           cat > /tmp/run-tests.sh << 'SCRIPT'
           set +e
           cd "$1"
-          timeout --kill-after=30 240 ./gradlew connectedDebugAndroidTest --no-daemon \
+          timeout --kill-after=30 480 ./gradlew connectedDebugAndroidTest --no-daemon \
             > "$2/gradle-instrumentation.log" 2>&1
           GRADLE_EXIT=$?
           cat "$2/gradle-instrumentation.log"
@@ -210,6 +210,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
+          target: google_apis
           arch: x86
           profile: pixel_2
           # Headless CI options: software GPU, no audio/animation/snapshots so the
@@ -218,9 +219,10 @@ jobs:
           disable-animations: true
           # Fail fast if the emulator doesn't finish booting within 6 minutes.
           emulator-boot-timeout: 360
-          # timeout --kill-after=30: send SIGTERM at 4 min, then SIGKILL 30 s later.
+          # timeout --kill-after=30: send SIGTERM at 8 min, then SIGKILL 30 s later.
+          # 13 tests × 30 s per-test timeout + Gradle + ADB overhead ≈ 7 min worst case.
           # Plain `timeout` only sends SIGTERM; Gradle daemon + ADB child processes
-          # can ignore it and run until the job-level timeout fires (was the 30-min hang).
+          # can ignore it and run until the job-level timeout fires.
           script: /tmp/run-tests.sh "${{ github.workspace }}/android-photo-cleanup" "${{ github.workspace }}"
 
       - name: Collect emulator step logs
