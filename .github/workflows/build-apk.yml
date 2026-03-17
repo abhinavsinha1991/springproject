@@ -192,14 +192,34 @@ jobs:
           cat > /tmp/run-tests.sh << 'SCRIPT'
           set +e
           cd "$1"
+          LOG_DIR="$2"
+
+          # Clear stale logcat so we only capture this run
+          adb logcat -c 2>/dev/null || true
+
+          # Capture per-test pass/fail + exception stack traces in the background.
+          # TestRunner:V  → STARTED / PASSED / FAILED lines and full stack traces
+          # System.err:W  → JUnit assertion messages (expected vs actual values)
+          # *:S           → silence all unrelated noise
+          adb logcat -v threadtime TestRunner:V System.err:W "*:S" \
+            > "$LOG_DIR/logcat-tests.log" 2>&1 &
+          LOGCAT_PID=$!
+
           timeout --kill-after=30 480 ./gradlew connectedDebugAndroidTest --no-daemon \
-            > "$2/gradle-instrumentation.log" 2>&1
+            > "$LOG_DIR/gradle-instrumentation.log" 2>&1
           GRADLE_EXIT=$?
-          cat "$2/gradle-instrumentation.log"
-          mkdir -p "$2/screenshots"
+
+          # Let logcat drain then stop it
+          sleep 3
+          kill "$LOGCAT_PID" 2>/dev/null || true
+
+          cat "$LOG_DIR/gradle-instrumentation.log"
+
+          mkdir -p "$LOG_DIR/screenshots"
           adb pull \
             /sdcard/Android/data/com.photocleanup/files/test-screenshots/ \
-            "$2/screenshots/" || echo "No screenshots found on device"
+            "$LOG_DIR/screenshots/" || echo "No screenshots found on device"
+
           exit $GRADLE_EXIT
           SCRIPT
           chmod +x /tmp/run-tests.sh
@@ -261,6 +281,15 @@ jobs:
           path: android-photo-cleanup/app/build/reports/androidTests/connected/
           retention-days: 7
 
+      - name: Upload logcat test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logcat-tests
+          path: logcat-tests.log
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Upload test screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -290,8 +319,30 @@ jobs:
             echo "Commit: ${{ github.sha }}"
             echo "Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo ""
+
+            # Gradle output (last 20 KB — enough to see which task failed or timed out)
             f="$GITHUB_WORKSPACE/gradle-instrumentation.log"
-            [ -f "$f" ] && { echo "## gradle-instrumentation.log"; tail -c 35000 "$f"; echo ""; }
+            [ -f "$f" ] && { echo "## gradle-instrumentation.log"; tail -c 20000 "$f"; echo ""; }
+
+            # Per-test logcat output: shows STARTED/PASSED/FAILED per test + full
+            # exception messages (expected vs actual) and stack traces.
+            # This is the most useful section for diagnosing assertion failures or
+            # figuring out which test was running when a timeout occurred.
+            f="$GITHUB_WORKSPACE/logcat-tests.log"
+            [ -f "$f" ] && { echo "## logcat-tests.log (per-test results + stack traces)"; cat "$f"; echo ""; }
+
+            # XML test results written by the runner as each test completes.
+            # Even on timeout, completed tests have results here.
+            echo "## XML test failures"
+            find "$GITHUB_WORKSPACE/android-photo-cleanup/app/build/outputs/androidTest-results" \
+              -name "*.xml" 2>/dev/null \
+            | while IFS= read -r xml; do
+                grep -qE '<(failure|error)' "$xml" 2>/dev/null && {
+                  echo "--- $(basename "$xml") ---"
+                  cat "$xml"
+                  echo ""
+                }
+              done | head -c 15000
           } > ci-failure-logs.txt
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
