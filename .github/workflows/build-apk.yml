@@ -313,6 +313,13 @@ jobs:
         if: failure()
         run: |
           BRANCH="${{ github.head_ref || github.ref_name }}"
+
+          # set +e so that any failing command inside log collection does NOT
+          # abort the step before the git push runs (bash -eo pipefail is the
+          # default in Actions; the while|head pipeline exits non-zero when grep
+          # finds no matches, which would kill the block without that guard).
+          set +e
+
           {
             echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             echo "Branch: $BRANCH"
@@ -337,16 +344,25 @@ jobs:
             find "$GITHUB_WORKSPACE/android-photo-cleanup/app/build/outputs/androidTest-results" \
               -name "*.xml" 2>/dev/null \
             | while IFS= read -r xml; do
-                grep -qE '<(failure|error)' "$xml" 2>/dev/null && {
+                if grep -qE '<(failure|error)' "$xml" 2>/dev/null; then
                   echo "--- $(basename "$xml") ---"
                   cat "$xml"
                   echo ""
-                }
+                fi
               done | head -c 15000
           } > ci-failure-logs.txt
+
+          set -e
+
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add ci-failure-logs.txt
           git commit -m "ci: save instrumentation failure logs"
-          git pull --rebase origin "$BRANCH" && git push origin HEAD:"$BRANCH" || \
-            git pull --rebase origin "$BRANCH" && git push origin HEAD:"$BRANCH" || true
+          if git pull --rebase origin "$BRANCH" && git push origin HEAD:"$BRANCH"; then
+            echo "ci-failure-logs.txt pushed to $BRANCH"
+          else
+            echo "push failed on first attempt, retrying..."
+            git pull --rebase origin "$BRANCH" && git push origin HEAD:"$BRANCH" \
+              && echo "ci-failure-logs.txt pushed to $BRANCH on retry" \
+              || echo "ERROR: failed to push ci-failure-logs.txt — check Actions log above"
+          fi
